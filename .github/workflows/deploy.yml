@@ -1,0 +1,35 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-to-ec2:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to Server 1
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_1 }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /home/ubuntu/antirag-devops
+            git pull origin main
+            chmod +x deploy.sh
+            ./deploy.sh
+
+      - name: Deploy to Server 2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_2 }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /home/ubuntu/antirag-devops
+            git pull origin main
+            chmod +x deploy.sh
+            ./deploy.sh
