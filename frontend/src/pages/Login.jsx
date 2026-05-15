@@ -43,8 +43,8 @@ const Login = () => {
 
   return (
     <div className="app-container" style={{ justifyContent: 'center', alignItems: 'center', display: 'flex' }}>
-      <div className="info-panel glass-panel" style={{ width: '400px', padding: '30px' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>DocuVision <span style={{color: '#4ade80'}}>DevOps</span> Login</h2>
+      <div className="info-panel glass-panel" style={{ width: '700px', padding: '40px' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>DocuVision <span style={{color: '#f60606ff'}}>DevOps</span> Login</h2>
         {error && <div style={{ color: '#ef4444', marginBottom: '15px', textAlign: 'center' }}>{error}</div>}
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <input

@@ -23,6 +23,9 @@ First, we need to push your local `antirag` codebase to a remote GitHub reposito
    git branch -M main
    git remote add origin https://github.com/YOUR_USERNAME/antirag-devops.git
    git push -u origin main
+   # if error will come like branch 'main' set up to track 'origin/main'.
+   git remote set-url origin https://github.com/YOUR_USERNAME/antirag-devops.git
+   git push -u origin main
    ```
 
 ---
@@ -42,6 +45,7 @@ This step covers launching a server and setting up the application manually.
   - Allow **HTTP traffic** from the internet.
   - Allow **Custom TCP** on port `8000` (for your backend API) from the internet.
   - Allow **Custom TCP** on port `5173` (for frontend preview) from the internet.
+- **Configure Storage:** Change the default `8 GiB` to **`15 GiB`**. *(This prevents the "No space left on device" error during NPM install and gives plenty of room for your Swap space!)*
 
 ### 2. Connect to Your Instance
 Open your terminal where your `.pem` file is located:
@@ -63,8 +67,8 @@ sudo apt update && sudo apt upgrade -y
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-# Install Python 3 & pip, plus Nginx
-sudo apt install -y python3-pip python3-venv nginx
+# Install Python 3, pip, Nginx, and essential C/Rust compilers (Prevents build errors!)
+sudo apt install -y python3-pip python3-venv python3-dev build-essential libpq-dev cargo nginx
 
 # Install PM2 (Process Manager to keep the app running forever)
 sudo npm install -g pm2
@@ -78,11 +82,23 @@ cd antirag-devops
 We will use PM2 to keep both the React Vite frontend and the Python FastAPI backend running in the background.
 
 ```bash
+# ---- Add Swap Space (CRITICAL for 1GB RAM EC2 Instances to prevent Out of Memory errors) ----
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
 # ---- Start Backend ----
 cd backend
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+
+# Upgrade pip/wheel to prevent metadata errors
+pip install --upgrade pip setuptools wheel
+
+# Install dependencies (will now compile flawlessly!)
+pip install -r requirements.txt --no-cache-dir
+
 # Start Uvicorn with PM2
 pm2 start "uvicorn main:app --host 0.0.0.0 --port 8000" --name "antirag-backend"
 
@@ -94,9 +110,13 @@ npm run build
 sudo npm install -g serve
 pm2 start "serve -s dist -l 5173" --name "antirag-frontend"
 
-# Save PM2 configuration to start on reboot
-pm2 save
+# Generate PM2 startup script
 pm2 startup
+# IMPORTANT: The terminal will print a line starting with "sudo env PATH...".
+# You MUST copy and paste that line into the terminal and run it!
+
+# After running the sudo command, save the PM2 configuration
+pm2 save
 ```
 
 ---
@@ -113,20 +133,15 @@ To access your app without typing port numbers (e.g., `http://<IP>`), we configu
    ```nginx
    server {
        listen 80 default_server;
-       listen [::]:80 default_server;
 
        # Frontend Route
        location / {
            proxy_pass http://localhost:5173;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
        }
 
        # Backend API Route
        location /api/ {
            proxy_pass http://localhost:8000/;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
        }
    }
    ```
