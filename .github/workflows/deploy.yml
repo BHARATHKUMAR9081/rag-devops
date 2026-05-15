@@ -1,35 +1,51 @@
-name: Deploy to EC2
+name: Deploy to AWS EC2
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  deploy-to-ec2:
+  deploy-server-1:
+    name: Deploy to Server 1
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Deploy to Server 1
-        uses: appleboy/ssh-action@master
+      - name: Execute Deployment Script via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST_1 }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /home/ubuntu/antirag-devops
+            export GROQ_API_KEY="${{ secrets.GROQ_API_KEY }}"
+            export PINECONE_API_KEY="${{ secrets.PINECONE_API_KEY }}"
+            export PINECONE_INDEX_NAME="${{ secrets.PINECONE_INDEX_NAME }}"
+            export CLOUDINARY_URL="${{ secrets.CLOUDINARY_URL }}"
+            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            
+            cd ~/rag-devops
             git pull origin main
-            chmod +x deploy.sh
-            ./deploy.sh
+            bash deploy.sh
 
-      - name: Deploy to Server 2
-        uses: appleboy/ssh-action@master
+  deploy-server-2:
+    name: Deploy to Server 2
+    runs-on: ubuntu-latest
+    needs: deploy-server-1
+    steps:
+      - name: Execute Deployment Script via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST_2 }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /home/ubuntu/antirag-devops
+            export GROQ_API_KEY="${{ secrets.GROQ_API_KEY }}"
+            export PINECONE_API_KEY="${{ secrets.PINECONE_API_KEY }}"
+            export PINECONE_INDEX_NAME="${{ secrets.PINECONE_INDEX_NAME }}"
+            export CLOUDINARY_URL="${{ secrets.CLOUDINARY_URL }}"
+            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            
+            cd ~/rag-devops
             git pull origin main
-            chmod +x deploy.sh
-            ./deploy.sh
+            bash deploy.sh
